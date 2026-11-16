@@ -219,7 +219,7 @@ class MainActivity : Activity() {
             addView(advancedChevron)
             setOnClickListener { toggleAdvanced() }
         })
-        modelRow = ui.row("Speech model", "Parakeet Unified English", R.drawable.hex_icon_wave, trailing = chevron()) { modelSheet() }
+        modelRow = ui.row("Speech model", "Parakeet v3 (multilingual)", R.drawable.hex_icon_wave, trailing = chevron()) { modelSheet() }
         soundsRow = ui.row("Sounds", "", R.drawable.hex_icon_speaker, trailing = chevron()) { soundsSheet() }
         syncRow = ui.row("Desktop sync", "", R.drawable.hex_icon_refresh, trailing = chevron()) { syncSheet() }
         advanced = ui.card().apply {
@@ -321,7 +321,7 @@ class MainActivity : Activity() {
         cleanupRow.describe(cleanupSummary())
         modelRow.describe(when {
             downloading != null -> "$downloading $downloadProgress%"
-            ModelStore.isPresent(this) -> "Parakeet Unified English"
+            ModelStore.isPresent(this) -> "Parakeet v3 (multilingual)"
             else -> "Not downloaded"
         })
 
@@ -419,7 +419,7 @@ class MainActivity : Activity() {
                 { getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName) },
                 { startActivity(Intent(AndroidSettings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName"))) }),
             SetupStep("Speech model",
-                if (downloading != null) "$downloading $downloadProgress%" else "Parakeet Unified English · 731 MB",
+                if (downloading != null) "$downloading $downloadProgress%" else "Parakeet v3 · 739 MB",
                 R.drawable.hex_icon_wave, if (ModelStore.isPresent(this)) "Verify" else "Download",
                 { ModelStore.isVerified(this) },
                 { fetchModel() }),
@@ -630,12 +630,12 @@ class MainActivity : Activity() {
     }
 
     private fun modelSheet() {
-        val sheet = Sheet(this, ui, "Speech model", listOf("Parakeet Unified English, desktop Hex's English model, running on this phone"))
+        val sheet = Sheet(this, ui, "Speech model", listOf("Parakeet v3, NVIDIA's multilingual model: 25 European languages, French among them. It picks the language you speak by itself, on this phone"))
         val card = ui.card()
         val state = Dictation.state
         val file = when {
-            ModelStore.isVerified(this) -> "731 MB · verified"
-            ModelStore.isPresent(this) -> "731 MB · not verified"
+            ModelStore.isVerified(this) -> "739 MB · verified"
+            ModelStore.isPresent(this) -> "739 MB · not verified"
             else -> "Not downloaded"
         }
         card.row(ui.row("File", file, R.drawable.hex_icon_folder))
@@ -765,7 +765,7 @@ class MainActivity : Activity() {
         val card = ui.card()
         card.row(ui.row("Hex", "Anomaly · MIT License", R.drawable.hex_mark))
         card.row(ui.row("transcribe.cpp", "Speech engine · MIT License", R.drawable.hex_icon_terminal))
-        card.row(ui.row("Parakeet Unified English", "NVIDIA · CC-BY-4.0", R.drawable.hex_icon_wave))
+        card.row(ui.row("Parakeet TDT 0.6B v3", "NVIDIA · CC-BY-4.0", R.drawable.hex_icon_wave))
         card.row(ui.row("Inter, IBM Plex Mono", "SIL Open Font License 1.1", R.drawable.hex_icon_text_tool))
         sheet.body.addView(card)
         sheet.actions(emptyList(), listOf(ui.button("Done") { sheet.dismiss() }))

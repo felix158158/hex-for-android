@@ -9,6 +9,23 @@ This is a fork, not a release by Hex's authors. Everything Android lives in
 `android/`; no file outside it changes, so `git merge upstream/dev` stays
 clean.
 
+## Français
+
+This fork swaps the English-only model for **Parakeet TDT 0.6B v3**, NVIDIA's
+multilingual model (25 European languages, French among them). It works out the
+spoken language by itself, so there is nothing to configure: dictate in French
+or in English and the model follows. Requirements are unchanged — an arm64
+phone on Android 11 or later, 1.5 GB free (the model is 739 MB).
+
+Everything else is unchanged, and still English: the interface, the spoken
+formatting and symbol commands (`new line`, `hashtag`), and filler-word removal,
+which desktop Hex only applies to English anyway.
+
+Against [the port this forks](https://github.com/monkey-w1n5t0n/hex-for-android),
+the changes are the pinned artifact and its SHA-256 in `ModelStore.kt`, the
+language hint in `Settings.kt` (dropped for the engine, `fr` for the text
+steps), the model labels, the app name, and this section.
+
 ## Install
 
 Requirements: an arm64 Android phone on Android 11 or later, about 1.5 GB
@@ -18,7 +35,7 @@ work, more slowly.
 1. Download `hex-android-<version>.apk` and open it. Allow your browser or
    file manager to install apps when Android asks.
 2. Open Hex and follow **Set up**: microphone, notifications, accessibility,
-   battery, and the speech model (731 MB, use Wi-Fi).
+   battery, and the speech model (739 MB, use Wi-Fi).
 3. **If the accessibility switch is greyed out:** Android restricts that
    setting for apps installed outside a store. Open App info for Hex, tap ⋮,
    then **Allow restricted settings**, and try again. Hex's setup row links
@@ -53,7 +70,7 @@ certificate digest published with the release against
 | Part | Source in Hex | How |
 |---|---|---|
 | Speech engine | Hex's `transcribe.cpp` fork, the rev pinned in `../Cargo.toml` | `transcribe-cpp` crate, built with the NDK |
-| Model | Parakeet Unified English 0.6B Q8_0 (`src/transcription/artifacts.rs`) | Same Hugging Face revision and SHA-256 |
+| Model | Parakeet TDT 0.6B v3 Q8_0, multilingual (`src/transcription/artifacts.rs`) | Same Hugging Face revision and SHA-256 |
 | Vocabulary biasing | Parakeet rescoring in Hex's engine fork | Same term limit (64) and boost levels as `src/dictation/vocabulary.rs` |
 | Text steps | `src/dictation/{spoken_formatting,spoken_symbols,filler_words,text_replacements}.rs` | Compiled directly with `#[path]`; their tests run here too |
 | Look | Rune's Inter and IBM Plex Mono, colours sampled from `tests/golden/`, row icons from `src/rune_ui/icons.rs`, the mark from `app/AppIcon.icon` | `tools/icons-from-hex.py`; tokens and pieces in `Ui.kt` |

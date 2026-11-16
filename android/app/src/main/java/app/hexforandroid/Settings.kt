@@ -7,7 +7,7 @@ import org.json.JSONObject
 
 /**
  * User settings, with defaults for someone who just installed the app:
- * Parakeet Unified English, spoken formatting and filler removal on, vocabulary
+ * Parakeet v3 (multilingual), spoken formatting and filler removal on, vocabulary
  * biasing on (it does nothing until there are terms), sounds off.
  */
 class Settings(context: Context) {
@@ -45,7 +45,9 @@ class Settings(context: Context) {
     fun threadCount() = if (threads > 0) threads else autoThreads()
 
     fun runSettings(): JSONObject = JSONObject().apply {
-        put("language", "en")
+        // No language hint: Parakeet v3 detects the spoken language itself, and
+        // desktop Hex never sends one for it (models.rs: accepts_language_hint
+        // = false). RunSettings.language stays None, the model's own choice.
         val terms = Vocabulary.entries(app)
         if (vocabularyBiasing && terms.isNotEmpty()) {
             put("vocabulary", JSONArray(terms.map { it.toJson() }))
@@ -64,7 +66,9 @@ class Settings(context: Context) {
         put("spoken_formatting", spokenFormatting)
         put("spoken_symbols", spokenSymbols)
         put("filler_words", fillerWords)
-        put("language", "en")
+        // Only gates filler-word removal, which upstream applies to English
+        // alone; "fr" keeps French dictation exactly as spoken.
+        put("language", "fr")
         put("replacements", JSONArray(replacements().map { (phrase, output) -> JSONObject().put("matched_phrase", phrase).put("output", output) }))
     }
 

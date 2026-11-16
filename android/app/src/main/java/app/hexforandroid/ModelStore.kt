@@ -9,18 +9,24 @@ import java.net.URL
 import java.security.MessageDigest
 
 /**
- * Hex's recommended English model (`PARAKEET_UNIFIED_ENGLISH_ARTIFACT` in
- * src/transcription/artifacts.rs), pinned to the same revision and hash.
+ * Parakeet TDT 0.6B v3 (`PARAKEET_V3_ARTIFACT` in src/transcription/artifacts.rs),
+ * NVIDIA's multilingual model: 25 European languages, French included. It
+ * works out the spoken language by itself, so the engine is given no hint
+ * (desktop Hex declares it `accepts_language_hint: false` in models.rs).
+ *
+ * Same architecture and size as the English-only model this fork replaces,
+ * so the vocabulary rescoring and the two CPU variants are untouched. Pinned
+ * to the same revision and hash as desktop Hex.
  *
  * The file lives in the app's external files directory so a development
  * machine can also `adb push` it there instead of downloading.
  */
 object ModelStore {
-    const val FILENAME = "parakeet-unified-en-0.6b-Q8_0.gguf"
-    private const val REPOSITORY = "handy-computer/parakeet-unified-en-0.6b-gguf"
-    private const val REVISION = "7e948f21b7bdbac698d3318db9d350f1096f3b6c"
-    const val BYTES = 731_357_568L
-    private const val SHA256 = "4b50b6dd862bf6e346929aaf4f5eaacec003bfa3f56462d6c874b41ef2f38795"
+    const val FILENAME = "parakeet-tdt-0.6b-v3-Q8_0.gguf"
+    private const val REPOSITORY = "handy-computer/parakeet-tdt-0.6b-v3-gguf"
+    private const val REVISION = "85ac09ea12fc4b1112fa76810059364bc6adc9de"
+    const val BYTES = 739_508_576L
+    private const val SHA256 = "5859f77944efcd8eafa23a6350731960b2b55b2203df51f319665c807d802cc7"
     private const val URL_STRING = "https://huggingface.co/$REPOSITORY/resolve/$REVISION/$FILENAME"
 
     fun dir(context: Context): File =
