@@ -299,9 +299,9 @@ class MainActivity : Activity() {
             else -> Triple(t.faint, "Off", "Turn on to show the bubble")
         }
         statusDot.background = ui.rounded(dot, 4f)
-        statusTitle.text = title
+        statusTitle.text = Text.of(title)
         val message = state.message ?: line
-        statusLine.text = message
+        statusLine.text = Text.of(message)
         statusLine.visibility = if (message.isEmpty()) View.GONE else View.VISIBLE
         statusAction.removeAllViews()
         statusAction.addView(

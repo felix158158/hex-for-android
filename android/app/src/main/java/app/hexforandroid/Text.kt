@@ -155,7 +155,11 @@ object Text {
 
         // Dictation states.
         "Listening." to "J'écoute.",
+        "Listening" to "J'écoute",
+        "Starting" to "Démarrage",
         "Transcribing." to "Transcription.",
+        "Transcribing" to "Transcription",
+        "Loading the speech model…" to "Chargement du modèle vocal…",
         "Nothing heard" to "Rien entendu",
         "Loads when Hex turns on" to "Chargé à l'activation de Hex",
         "Not downloaded" to "Non téléchargé",
