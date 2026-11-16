@@ -24,7 +24,9 @@ fn main() {
             })
             .collect(),
         boost: (!terms.is_empty()).then_some(2.5),
-        language: Some("en".into()),
+        // Parakeet v3 and the other multilingual models work the language out
+        // themselves, so the hint stays empty unless HEX_LANG names one.
+        language: std::env::var("HEX_LANG").ok().filter(|l| !l.is_empty()),
     };
     // The app keeps the model loaded, so the warm runs are the ones a
     // dictation sees. HEX_RUNS sets how many follow the cold one.
@@ -39,7 +41,7 @@ fn main() {
         spoken_formatting: true,
         spoken_symbols: true,
         filler_words: true,
-        language: "en".into(),
+        language: std::env::var("HEX_LANG").unwrap_or_else(|_| "en".into()),
         replacements: vec![],
     };
     println!("raw:       {}", run.text);
