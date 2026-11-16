@@ -11,8 +11,8 @@ android {
         applicationId = "app.hexforandroid"
         minSdk = 30
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.2.0-fr"
+        versionCode = 5
+        versionName = "0.3.0-fr"
         ndk { abiFilters += "arm64-v8a" }
     }
 
