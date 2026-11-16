@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Hex FR</string>
+    <string name="accessibility_description">Affiche la bulle de dictée de Hex au-dessus des autres applications et tape ce que tu dictes dans le champ de texte actif. Hex ne lit le champ actif que pour placer le texte à l\'endroit du curseur. La parole est transcrite sur ce téléphone et rien n\'est envoyé nulle part.</string>
+</resources>

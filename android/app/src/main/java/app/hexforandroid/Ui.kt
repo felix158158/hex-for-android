@@ -69,7 +69,7 @@ class Ui(val context: Context) {
     val narrow = context.resources.configuration.screenWidthDp < 520
 
     fun text(value: CharSequence, size: Float = 15f, face: Typeface = regular, color: Int = t.text) = TextView(context).apply {
-        text = value
+        text = Text.of(value)
         typeface = face
         setTextSize(TypedValue.COMPLEX_UNIT_SP, size)
         setTextColor(color)
@@ -209,7 +209,7 @@ class Ui(val context: Context) {
         }
 
         fun describe(value: String?) {
-            descriptionView.text = value.orEmpty()
+            descriptionView.text = Text.of(value.orEmpty())
             descriptionView.visibility = if (value.isNullOrEmpty()) GONE else VISIBLE
         }
     }
@@ -296,7 +296,7 @@ class Ui(val context: Context) {
             group.addView(ImageView(context).apply {
                 setImageResource(icon)
                 tag = value
-                contentDescription = label
+                contentDescription = Text.of(label)
                 setPadding(px(7), px(6), px(7), px(6))
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, px(34))
                 setOnClickListener {
@@ -311,7 +311,7 @@ class Ui(val context: Context) {
 
     fun field(hint: String, value: String = "", mono: Boolean = false) = EditText(context).apply {
         setText(value)
-        this.hint = hint
+        this.hint = Text.of(hint)
         typeface = if (mono) this@Ui.mono else regular
         setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
         setTextColor(t.text)

@@ -798,6 +798,6 @@ class MainActivity : Activity() {
 
     private fun later(block: () -> Unit) = root.postDelayed(block, 350)
 
-    private fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
+    private fun toast(text: String) = Toast.makeText(this, Text.of(text), Toast.LENGTH_SHORT).show()
 
 }
