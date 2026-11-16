@@ -32,7 +32,18 @@ jobs:
           java-version: "21"
 
       - name: Android SDK
-        uses: android-actions/setup-android@v3
+        run: |
+          curl -sSLo /tmp/cmdline-tools.zip \
+            "https://dl.google.com/android/repository/commandlinetools-linux-16111833_latest.zip"
+          unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-tools
+          mkdir -p "$HOME/android-sdk/cmdline-tools"
+          mv /tmp/cmdline-tools/cmdline-tools "$HOME/android-sdk/cmdline-tools/latest"
+          {
+            echo "ANDROID_HOME=$HOME/android-sdk"
+            echo "ANDROID_SDK_ROOT=$HOME/android-sdk"
+            echo "ANDROID_NDK_HOME=$HOME/android-sdk/ndk/30.0.16248370"
+          } >> "$GITHUB_ENV"
+          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
 
       - name: SDK packages
         run: |
