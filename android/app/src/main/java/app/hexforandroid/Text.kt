@@ -22,6 +22,51 @@ object Text {
         return FRENCH[value.toString()] ?: value
     }
 
+    /** [value] as a String, for places that build one from several parts. */
+    fun s(value: String): String = of(value).toString()
+
+    /** "3 terms", "1 terme". */
+    fun terms(count: Int): String = when {
+        !french() -> if (count == 1) "1 term" else "$count terms"
+        count == 1 -> "1 terme"
+        else -> "$count termes"
+    }
+
+    /** "2 replacements", "2 remplacements". */
+    fun replacements(count: Int): String = when {
+        !french() -> if (count == 1) "1 replacement" else "$count replacements"
+        count == 1 -> "1 remplacement"
+        else -> "$count remplacements"
+    }
+
+    /** "8.0 s of audio in 1.42 s". */
+    fun dictation(audioMs: Long, inferenceMs: Long): String = if (french()) {
+        "%.1f s d'audio en %.2f s".format(audioMs / 1000f, inferenceMs / 1000f)
+    } else {
+        "%.1f s of audio in %.2f s".format(audioMs / 1000f, inferenceMs / 1000f)
+    }
+
+    /** "just now", "2 min ago", "3 h ago", "5 d ago". */
+    fun ago(seconds: Long): String = when {
+        !french() -> when {
+            seconds < 45 -> "just now"
+            seconds < 3600 -> "${(seconds + 30) / 60} min ago"
+            seconds < 86_400 -> "${seconds / 3600} h ago"
+            else -> "${seconds / 86_400} d ago"
+        }
+        seconds < 45 -> "à l'instant"
+        seconds < 3600 -> "il y a ${(seconds + 30) / 60} min"
+        seconds < 86_400 -> "il y a ${seconds / 3600} h"
+        else -> "il y a ${seconds / 86_400} j"
+    }
+
+    /** "Synced with the desktop 2 min ago". */
+    fun syncedWith(name: String, ago: String): String =
+        if (french()) "Synchronisé avec $name $ago" else "Synced with $name $ago"
+
+    /** "Model: <detail>", the label translated and the detail left alone. */
+    fun prefix(label: String, detail: String): String = "${s(label)} : $detail"
+
     @Suppress("SpellCheckingInspection")
     private val FRENCH: Map<String, String> = mapOf(
         // Sections and the set-up list.
@@ -50,6 +95,10 @@ object Text {
         "Lower other audio" to "Baisser les autres sons",
         "CPU threads" to "Threads CPU",
         "Spoken formatting" to "Mise en forme vocale",
+        "Formatting" to "Mise en forme",
+        "Symbols" to "Symboles",
+        "Fillers" to "Hésitations",
+        "Model" to "Modèle",
         "Spoken symbols" to "Symboles vocaux",
         "Remove filler words" to "Supprimer les mots de remplissage",
         "Replace words" to "Remplacer des mots",

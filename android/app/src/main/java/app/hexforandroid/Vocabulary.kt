@@ -94,7 +94,7 @@ object Vocabulary {
         prefs.getString("sync_error", null)?.let { return it }
         val at = prefs.getLong("sync_at", 0L)
         if (at == 0L) return "Not synced yet"
-        return "Synced with ${desktopName(context)} ${History.ago(at)}"
+        return Text.syncedWith(desktopName(context), History.ago(at))
     }
 
     /**
@@ -224,13 +224,7 @@ object History {
 
     fun ago(at: Long): String {
         if (at == 0L) return ""
-        val seconds = (System.currentTimeMillis() - at) / 1000
-        return when {
-            seconds < 45 -> "just now"
-            seconds < 3600 -> "${(seconds + 30) / 60} min ago"
-            seconds < 86_400 -> "${seconds / 3600} h ago"
-            else -> "${seconds / 86_400} d ago"
-        }
+        return Text.ago((System.currentTimeMillis() - at) / 1000)
     }
 
     private const val LIMIT = 50

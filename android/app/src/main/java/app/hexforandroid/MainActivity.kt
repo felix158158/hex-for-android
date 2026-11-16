@@ -314,9 +314,8 @@ class MainActivity : Activity() {
         setupSection.visibility = if (missing.isEmpty()) View.GONE else View.VISIBLE
 
         vocabularyValue.text = when (val terms = Vocabulary.entries(this).size) {
-            0 -> "None"
-            1 -> "1 term"
-            else -> "$terms terms"
+            0 -> Text.s("None")
+            else -> Text.terms(terms)
         }
         cleanupRow.describe(cleanupSummary())
         modelRow.describe(when {
@@ -333,17 +332,17 @@ class MainActivity : Activity() {
         if (items.isEmpty()) recentCard.row(ui.row("Nothing yet", "Your dictations show here"))
         items.forEach { recentCard.row(historyRow(it)) }
 
-        footer.text = "${getString(R.string.app_name)} ${versionName()} · About"
+        footer.text = "${getString(R.string.app_name)} ${versionName()} · ${Text.s("About")}"
     }
 
     private fun cleanupSummary(): String {
         val on = listOfNotNull(
-            "Formatting".takeIf { settings.spokenFormatting },
-            "Symbols".takeIf { settings.spokenSymbols },
-            "Fillers".takeIf { settings.fillerWords },
-            settings.replacements().size.takeIf { it > 0 }?.let { if (it == 1) "1 replacement" else "$it replacements" },
+            Text.s("Formatting").takeIf { settings.spokenFormatting },
+            Text.s("Symbols").takeIf { settings.spokenSymbols },
+            Text.s("Fillers").takeIf { settings.fillerWords },
+            settings.replacements().size.takeIf { it > 0 }?.let { Text.replacements(it) },
         )
-        return if (on.isEmpty()) "Off" else on.joinToString(" · ")
+        return if (on.isEmpty()) Text.s("Off") else on.joinToString(" · ")
     }
 
     private fun historyRow(item: History.Item) = ui.horizontal {
@@ -453,7 +452,7 @@ class MainActivity : Activity() {
             }
             runOnUiThread {
                 downloading = null
-                result.onFailure { toast("Model: ${it.message}") }
+                result.onFailure { toast(Text.prefix("Model", it.message ?: "")) }
                 result.onSuccess { ok -> if (!ok) toast("The model's checksum is wrong. Download it again") }
                 refresh()
             }
@@ -641,7 +640,7 @@ class MainActivity : Activity() {
         card.row(ui.row("File", file, R.drawable.hex_icon_folder))
         card.row(ui.row("Engine", state.engine ?: "Loads when Hex turns on", R.drawable.hex_icon_terminal))
         state.last?.let {
-            card.row(ui.row("Last dictation", "%.1f s of audio in %.2f s".format(it.audioMs / 1000f, it.inferenceMs / 1000f), R.drawable.hex_icon_timer))
+            card.row(ui.row("Last dictation", Text.dictation(it.audioMs, it.inferenceMs), R.drawable.hex_icon_timer))
         }
         sheet.body.addView(card)
         sheet.actions(
