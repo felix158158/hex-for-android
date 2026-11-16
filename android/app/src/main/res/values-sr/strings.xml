@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Hex for Android</string>
+    <string name="accessibility_description">Приказује балон за диктат Hex-а изнад других апликација и куца оно што диктираш у активно поље. Hex чита активно поље само да би поставио текст на место курсора. Говор се транскрибује на телефону и ништа се не шаље нигде.</string>
+</resources>

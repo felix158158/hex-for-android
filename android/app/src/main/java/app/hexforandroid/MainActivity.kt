@@ -299,9 +299,9 @@ class MainActivity : Activity() {
             else -> Triple(t.faint, "Off", "Turn on to show the bubble")
         }
         statusDot.background = ui.rounded(dot, 4f)
-        statusTitle.text = title
+        statusTitle.text = Translations.of(title)
         val message = state.message ?: line
-        statusLine.text = message
+        statusLine.text = Translations.of(message)
         statusLine.visibility = if (message.isEmpty()) View.GONE else View.VISIBLE
         statusAction.removeAllViews()
         statusAction.addView(
@@ -314,9 +314,8 @@ class MainActivity : Activity() {
         setupSection.visibility = if (missing.isEmpty()) View.GONE else View.VISIBLE
 
         vocabularyValue.text = when (val terms = Vocabulary.entries(this).size) {
-            0 -> "None"
-            1 -> "1 term"
-            else -> "$terms terms"
+            0 -> Translations.s("None")
+            else -> Translations.terms(terms)
         }
         cleanupRow.describe(cleanupSummary())
         modelRow.describe(when {
@@ -333,17 +332,17 @@ class MainActivity : Activity() {
         if (items.isEmpty()) recentCard.row(ui.row("Nothing yet", "Your dictations show here"))
         items.forEach { recentCard.row(historyRow(it)) }
 
-        footer.text = "${getString(R.string.app_name)} ${versionName()} · About"
+        footer.text = "${getString(R.string.app_name)} ${versionName()} · ${Translations.s("About")}"
     }
 
     private fun cleanupSummary(): String {
         val on = listOfNotNull(
-            "Formatting".takeIf { settings.spokenFormatting },
-            "Symbols".takeIf { settings.spokenSymbols },
-            "Fillers".takeIf { settings.fillerWords },
-            settings.replacements().size.takeIf { it > 0 }?.let { if (it == 1) "1 replacement" else "$it replacements" },
+            Translations.s("Formatting").takeIf { settings.spokenFormatting },
+            Translations.s("Symbols").takeIf { settings.spokenSymbols },
+            Translations.s("Fillers").takeIf { settings.fillerWords },
+            settings.replacements().size.takeIf { it > 0 }?.let { Translations.replacements(it) },
         )
-        return if (on.isEmpty()) "Off" else on.joinToString(" · ")
+        return if (on.isEmpty()) Translations.s("Off") else on.joinToString(" · ")
     }
 
     private fun historyRow(item: History.Item) = ui.horizontal {
@@ -453,7 +452,7 @@ class MainActivity : Activity() {
             }
             runOnUiThread {
                 downloading = null
-                result.onFailure { toast("Model: ${it.message}") }
+                result.onFailure { toast(Translations.prefix("Model", it.message ?: "")) }
                 result.onSuccess { ok -> if (!ok) toast("The model's checksum is wrong. Download it again") }
                 refresh()
             }
@@ -641,7 +640,7 @@ class MainActivity : Activity() {
         card.row(ui.row("File", file, R.drawable.hex_icon_folder))
         card.row(ui.row("Engine", state.engine ?: "Loads when Hex turns on", R.drawable.hex_icon_terminal))
         state.last?.let {
-            card.row(ui.row("Last dictation", "%.1f s of audio in %.2f s".format(it.audioMs / 1000f, it.inferenceMs / 1000f), R.drawable.hex_icon_timer))
+            card.row(ui.row("Last dictation", Translations.dictation(it.audioMs, it.inferenceMs), R.drawable.hex_icon_timer))
         }
         sheet.body.addView(card)
         sheet.actions(
@@ -798,6 +797,6 @@ class MainActivity : Activity() {
 
     private fun later(block: () -> Unit) = root.postDelayed(block, 350)
 
-    private fun toast(text: String) = Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
+    private fun toast(text: String) = Toast.makeText(this, Translations.of(text), Toast.LENGTH_SHORT).show()
 
 }

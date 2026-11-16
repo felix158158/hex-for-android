@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Hex for Android</string>
+    <string name="accessibility_description">在其他应用上方显示 Hex 的听写气泡，并将你说的内容输入到当前文本框。Hex 只读取当前文本框以确定光标位置。语音在本机转写，不会发送到任何地方。</string>
+</resources>

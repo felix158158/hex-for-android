@@ -178,6 +178,24 @@ rev into `core/Cargo.toml`, because a `[patch]` doesn't cross workspaces. If
 one of the four text-step files starts depending on other Hex modules, the
 core build fails, and the fix goes in `core/src/dictation.rs`.
 
+## Languages
+
+The interface follows the phone's system language. Translations are
+English-keyed tables in `app/src/main/java/app/hexforandroid/`, the same shape
+as desktop Hex's `src/desktop/i18n/`: `French.kt`, `Chinese.kt` and
+`Serbian.kt`, selected by `Translations.kt`. A string no table covers stays in
+English, so adding a language is additive:
+
+1. Copy `French.kt` to `<Language>.kt` and translate the values, keeping the
+   English keys.
+2. Add the locale tag to `Translations.tag()` / `table()` and to the formatters
+   (plural labels, relative times, durations).
+3. Add `res/values-<tag>/strings.xml` for the accessibility description.
+
+`Translations.tag()` already separates `zh-Hant` and `sr-Latn`; both need their
+own tables, as the characters or the script differ. The current tables have
+not been reviewed by native speakers — corrections are welcome.
+
 ## Licences
 
 - **Code:** MIT, as Hex.
