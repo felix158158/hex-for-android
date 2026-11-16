@@ -24,10 +24,10 @@ pub struct TextSteps {
 pub fn process(transcript: &str, steps: &TextSteps) -> String {
     let mut text = transcript.to_owned();
     if steps.spoken_formatting {
-        text = spoken_formatting::apply(&text);
+        text = spoken_formatting::apply_for(&text, &steps.language);
     }
     if steps.spoken_symbols {
-        text = spoken_symbols::apply(&text);
+        text = spoken_symbols::apply_for(&text, &steps.language);
     }
     if let Some(stripped) = filler_words::strip_if(&text, &steps.language, steps.filler_words) {
         text = stripped;

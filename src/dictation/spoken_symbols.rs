@@ -2,10 +2,11 @@
 //! become the characters, joined to their neighbours as written text joins
 //! them: "hashtag release" is "#release", "my underscore variable" is
 //! "my_variable", and "done comma thanks" is "done, thanks". Spanish words
-//! ("arroba", "guion bajo", "punto y coma", …) work too. Matching ignores
-//! case and Spanish accents and needs word boundaries, so "commas" or
-//! "hashtags" stay as they are. The commas, periods, and spaces a model puts around a
-//! spoken symbol go with it.
+//! ("arroba", "guion bajo", "punto y coma", …) work too, and French words
+//! ("virgule", "point", "arobase", …) when the dictation is French. Matching
+//! ignores case and the accents of both, and needs word boundaries, so
+//! "commas" or "hashtags" stay as they are. The commas, periods, and spaces a
+//! model puts around a spoken symbol go with it.
 
 use super::spoken_formatting::fold;
 
@@ -38,8 +39,38 @@ const SYMBOLS: &[(&[&str], char, Join)] = &[
     (&["dos", "puntos"], ':', Join::Previous),
 ];
 
+/// The French words, used only when the dictation is French: "point" is an
+/// English word too, so these wait for the language the text steps are told.
+/// Longest phrases come first, because the first match wins.
+const SYMBOLS_FR: &[(&[&str], char, Join)] = &[
+    (&["point", "d'interrogation"], '?', Join::Previous),
+    (&["point", "d'exclamation"], '!', Join::Previous),
+    (&["point", "virgule"], ';', Join::Previous),
+    (&["deux", "points"], ':', Join::Previous),
+    (&["barre", "oblique"], '/', Join::Both),
+    (&["virgule"], ',', Join::Previous),
+    (&["point"], '.', Join::Previous),
+    (&["pourcent"], '%', Join::Previous),
+    (&["arobase"], '@', Join::Next),
+    (&["diese"], '#', Join::Next),
+    (&["souligne"], '_', Join::Both),
+    // "la variable, soulignée" agrees with the noun it follows.
+    (&["soulignee"], '_', Join::Both),
+    (&["tiret"], '-', Join::Both),
+    (&["egale"], '=', Join::Both),
+    (&["asterisque"], '*', Join::Both),
+];
+
+/// No extra words, for every language but French.
+const NO_SYMBOLS: &[(&[&str], char, Join)] = &[];
+
 /// `transcript` with its spoken symbols applied.
 pub fn apply(transcript: &str) -> String {
+    apply_for(transcript, "en")
+}
+
+/// `transcript` with the spoken symbols of `language` applied.
+pub fn apply_for(transcript: &str, language: &str) -> String {
     let chars: Vec<char> = transcript.chars().collect();
     let mut out = String::with_capacity(transcript.len());
     // Where the last symbol written ends, so trimming never removes it.
@@ -47,7 +78,7 @@ pub fn apply(transcript: &str) -> String {
     let mut index = 0;
     while index < chars.len() {
         let word_start = index == 0 || !chars[index - 1].is_alphanumeric();
-        if word_start && let Some((symbol, join, end)) = symbol_at(&chars, index) {
+        if word_start && let Some((symbol, join, end)) = symbol_at(&chars, index, language) {
             index = emit(&mut out, &mut floor, symbol, join, &chars, end);
             continue;
         }
@@ -58,8 +89,16 @@ pub fn apply(transcript: &str) -> String {
 }
 
 /// The symbol whose words start at `start`, and where they end.
-fn symbol_at(chars: &[char], start: usize) -> Option<(char, Join, usize)> {
-    SYMBOLS.iter().find_map(|(words, symbol, join)| {
+fn symbol_at(chars: &[char], start: usize, language: &str) -> Option<(char, Join, usize)> {
+    let extra = if language.starts_with("fr") {
+        SYMBOLS_FR
+    } else {
+        NO_SYMBOLS
+    };
+    [SYMBOLS, extra]
+        .into_iter()
+        .flat_map(|table| table.iter())
+        .find_map(|(words, symbol, join)| {
         let mut position = start;
         for (number, word) in words.iter().enumerate() {
             if number > 0 {
@@ -140,7 +179,7 @@ fn emit(
 
 #[cfg(test)]
 mod tests {
-    use super::apply;
+    use super::{apply, apply_for};
 
     #[test]
     fn symbols_join_their_neighbours() {
@@ -168,6 +207,32 @@ mod tests {
         assert_eq!(apply("hola coma gracias"), "hola, gracias");
         assert_eq!(apply("la lista dos puntos manzanas"), "la lista: manzanas");
         assert_eq!(apply("hola comma gracias"), "hola, gracias");
+    }
+
+    #[test]
+    fn french_words_become_symbols_when_the_language_is_french() {
+        assert_eq!(apply_for("bonjour virgule ça va", "fr"), "bonjour, ça va");
+        assert_eq!(apply_for("fini point", "fr"), "fini.");
+        assert_eq!(apply_for("un point virgule deux", "fr"), "un; deux");
+        assert_eq!(apply_for("la liste deux points pommes", "fr"), "la liste: pommes");
+        assert_eq!(apply_for("vraiment point d'interrogation", "fr"), "vraiment?");
+        assert_eq!(apply_for("attention point d’exclamation", "fr"), "attention!");
+        assert_eq!(apply_for("écris arobase maison", "fr"), "écris @maison");
+        assert_eq!(apply_for("tag dièse sortie", "fr"), "tag #sortie");
+        assert_eq!(apply_for("mon souligné variable", "fr"), "mon_variable");
+        assert_eq!(apply_for("la valeur soulignée tva", "fr"), "la valeur_tva");
+        assert_eq!(apply_for("dix pourcent de plus", "fr"), "dix% de plus");
+        assert_eq!(apply_for("a égale b", "fr"), "a=b");
+        assert_eq!(apply_for("bien tiret connu", "fr"), "bien-connu");
+        assert_eq!(apply_for("et barre oblique ou", "fr"), "et/ou");
+    }
+
+    #[test]
+    fn french_words_wait_for_a_french_language() {
+        for text in ["fini point", "bonjour virgule ça va", "tag dièse sortie"] {
+            assert_eq!(apply(text), text);
+            assert_eq!(apply_for(text, "en"), text);
+        }
     }
 
     #[test]

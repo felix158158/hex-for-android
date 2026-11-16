@@ -5,8 +5,10 @@
 
 #[path = "../../../src/dictation/filler_words.rs"]
 pub mod filler_words;
+#[allow(dead_code)]
 #[path = "../../../src/dictation/spoken_formatting.rs"]
 pub mod spoken_formatting;
+#[allow(dead_code)]
 #[path = "../../../src/dictation/spoken_symbols.rs"]
 pub mod spoken_symbols;
 #[path = "../../../src/dictation/text_replacements.rs"]

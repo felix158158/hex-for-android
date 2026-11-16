@@ -2,8 +2,10 @@
 //! break", "new paragraph", "open quote", "close quote", and "quote" …
 //! "unquote" around words, #1167) become line breaks
 //! and quotation marks, in English and Spanish ("nuevo párrafo", "nueva
-//! línea", "abre comillas", …). Matching ignores case and Spanish accents
-//! and needs word boundaries, so "newline" or "new liner" stay as they are.
+//! línea", "abre comillas", …), and in French when the language is French
+//! ("nouvelle ligne", "nouveau paragraphe", "ouvrez les guillemets", …).
+//! Matching ignores case and the accents of both, and needs word boundaries,
+//! so "newline" or "new liner" stay as they are.
 //! The commas, periods, and spaces a model puts around a command go with it.
 
 #[derive(Clone, Copy)]
@@ -28,14 +30,44 @@ const COMMANDS: &[(&[&str], Command)] = &[
     (&["cierra", "comillas"], Command::CloseQuote),
 ];
 
-/// `c` lowercased with Spanish accents dropped, as the phrase lists are
-/// written: "Párrafo" reads as "parrafo".
+/// The French phrases, used only when the dictation is French: "point" is an
+/// English word too, so these wait for the language the text steps are told.
+const COMMANDS_FR: &[(&[&str], Command)] = &[
+    (&["nouveau", "paragraphe"], Command::Break("\n\n")),
+    (&["nouvelle", "ligne"], Command::Break("\n")),
+    (&["saut", "de", "ligne"], Command::Break("\n")),
+    (&["retour", "a", "la", "ligne"], Command::Break("\n")),
+    (&["a", "la", "ligne"], Command::Break("\n")),
+    (&["ouvrez", "les", "guillemets"], Command::OpenQuote),
+    (&["ouvre", "les", "guillemets"], Command::OpenQuote),
+    (&["fermez", "les", "guillemets"], Command::CloseQuote),
+    (&["ferme", "les", "guillemets"], Command::CloseQuote),
+];
+
+/// No extra phrases, for every language but French.
+const NO_COMMANDS: &[(&[&str], Command)] = &[];
+
+/// `c` lowercased with accents dropped, as the phrase lists are written:
+/// "Párrafo" reads as "parrafo", "dièse" as "diese".
 pub(super) fn fold(c: char) -> char {
     let mut lower = c.to_lowercase();
     let lower = match (lower.next(), lower.next()) {
         (Some(single), None) => single,
         _ => c,
     };
+    // French accents and the typographic apostrophe, so one phrase list
+    // matches "guillemets" however the model spells it.
+    match lower {
+        'à' | 'â' => return 'a',
+        'è' | 'ê' | 'ë' => return 'e',
+        'î' | 'ï' => return 'i',
+        'ô' => return 'o',
+        'ù' | 'û' => return 'u',
+        'ç' => return 'c',
+        'ÿ' => return 'y',
+        '’' => return '\'',
+        _ => {}
+    }
     match lower {
         'á' => 'a',
         'é' => 'e',
@@ -48,6 +80,11 @@ pub(super) fn fold(c: char) -> char {
 
 /// `transcript` with its spoken formatting phrases applied.
 pub fn apply(transcript: &str) -> String {
+    apply_for(transcript, "en")
+}
+
+/// `transcript` with the spoken formatting phrases of `language` applied.
+pub fn apply_for(transcript: &str, language: &str) -> String {
     let chars: Vec<char> = transcript.chars().collect();
     let mut out = String::with_capacity(transcript.len());
     let mut index = 0;
@@ -61,7 +98,7 @@ pub fn apply(transcript: &str) -> String {
             index = emit(&mut out, Command::CloseQuote, &chars, end);
             continue;
         }
-        if word_start && let Some((command, end)) = command_at(&chars, index) {
+        if word_start && let Some((command, end)) = command_at(&chars, index, language) {
             index = emit(&mut out, command, &chars, end);
             continue;
         }
@@ -81,8 +118,16 @@ pub fn apply(transcript: &str) -> String {
 }
 
 /// The command whose words start at `start`, and where they end.
-fn command_at(chars: &[char], start: usize) -> Option<(Command, usize)> {
-    COMMANDS.iter().find_map(|(words, command)| {
+fn command_at(chars: &[char], start: usize, language: &str) -> Option<(Command, usize)> {
+    let extra = if language.starts_with("fr") {
+        COMMANDS_FR
+    } else {
+        NO_COMMANDS
+    };
+    [COMMANDS, extra]
+        .into_iter()
+        .flat_map(|table| table.iter())
+        .find_map(|(words, command)| {
         let mut position = start;
         for (number, word) in words.iter().enumerate() {
             if number > 0 {
@@ -196,7 +241,7 @@ fn emit(out: &mut String, command: Command, chars: &[char], end: usize) -> usize
 
 #[cfg(test)]
 mod tests {
-    use super::apply;
+    use super::{apply, apply_for};
 
     #[test]
     fn breaks_replace_their_phrases_and_the_punctuation_around_them() {
@@ -256,6 +301,41 @@ mod tests {
             "Dijo \"sí\" y se fue"
         );
         assert_eq!(apply("Hola. New paragraph. Adiós."), "Hola.\n\nAdiós.");
+    }
+
+    #[test]
+    fn french_phrases_work_when_the_language_is_french() {
+        assert_eq!(
+            apply_for("Bonjour. Nouvelle ligne. Salut.", "fr"),
+            "Bonjour.\nSalut."
+        );
+        assert_eq!(
+            apply_for("Un. Nouveau paragraphe. Deux.", "fr"),
+            "Un.\n\nDeux."
+        );
+        assert_eq!(apply_for("un, saut de ligne, deux", "fr"), "un\ndeux");
+        assert_eq!(apply_for("un, retour à la ligne, deux", "fr"), "un\ndeux");
+        assert_eq!(apply_for("un À LA LIGNE deux", "fr"), "un\ndeux");
+        assert_eq!(
+            apply_for("dit ouvrez les guillemets salut fermez les guillemets", "fr"),
+            "dit \"salut\""
+        );
+        assert_eq!(
+            apply_for("Il a dit, ouvrez les guillemets, oui, fermez les guillemets.", "fr"),
+            "Il a dit, \"oui\"."
+        );
+    }
+
+    #[test]
+    fn french_phrases_wait_for_a_french_language() {
+        for text in [
+            "Bonjour. Nouvelle ligne. Salut.",
+            "Un. Nouveau paragraphe. Deux.",
+            "dit ouvrez les guillemets salut fermez les guillemets",
+        ] {
+            assert_eq!(apply(text), text);
+            assert_eq!(apply_for(text, "en"), text);
+        }
     }
 
     #[test]
