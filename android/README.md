@@ -5,9 +5,9 @@ local dictation app. A floating bubble records; Hex's own speech engine
 transcribes on the phone; the text goes into whatever field you're typing in.
 After a one-time model download, nothing you say leaves the phone.
 
-This is a fork, not a release by Hex's authors. Everything Android lives in
-`android/`; no file outside it changes, so `git merge upstream/dev` stays
-clean.
+This is a fork, not a release by Hex's authors. The app lives in `android/`;
+the dictation text steps it shares with Hex are in `src/dictation/` and are
+compiled into the core from there, so `git merge upstream/dev` stays clean.
 
 ## Français
 
@@ -17,14 +17,23 @@ spoken language by itself, so there is nothing to configure: dictate in French
 or in English and the model follows. Requirements are unchanged — an arm64
 phone on Android 11 or later, 1.5 GB free (the model is 739 MB).
 
-Everything else is unchanged, and still English: the interface, the spoken
-formatting and symbol commands (`new line`, `hashtag`), and filler-word removal,
-which desktop Hex only applies to English anyway.
+French dictations also get:
+
+- the interface in French when the phone is in French;
+- the dictated punctuation and symbols (*nouvelle ligne*, *virgule*, *point*,
+  *ouvrez les guillemets*, *arobase*…), active only for French;
+- numbers written as digits: *vingt-cinq* → `25`, *quatre-vingt-dix-huit* →
+  `98`, *deux mille vingt-six* → `2026`, *trois pour cent* → `3 %`,
+  *trois virgule quatorze* → `3,14`. A lone *un* or *une* stays a word, and a
+  compound with a non-number tail stays whole (*vingt-cinquième*).
+
+Filler-word removal still applies to English alone, as on the desktop.
 
 Against [the port this forks](https://github.com/monkey-w1n5t0n/hex-for-android),
 the changes are the pinned artifact and its SHA-256 in `ModelStore.kt`, the
 language hint in `Settings.kt` (dropped for the engine, `fr` for the text
-steps), the model labels, the app name, and this section.
+steps), the French tables in `src/dictation/`, the interface translation, the
+model labels, the app name, and this section.
 
 ## Install
 

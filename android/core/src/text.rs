@@ -1,11 +1,15 @@
 //! The text steps a dictation goes through after transcription, in the order
-//! Hex's desktop `prepare_transcript` uses: spoken formatting, spoken symbols,
-//! filler words, then text replacements.
+//! Hex's desktop `prepare_transcript` uses: spoken formatting, number words,
+//! spoken symbols, filler words, then text replacements.
+//!
+//! The number step is the Android app's own: Parakeet writes French numbers
+//! out in full ("quatre-vingt-dix-huit"), and no rewriting model runs on the
+//! phone to turn them into digits.
 
 use serde::Deserialize;
 
 use crate::dictation::{
-    filler_words, spoken_formatting, spoken_symbols,
+    filler_words, number_words, spoken_formatting, spoken_symbols,
     text_replacements::{ReplacementSet, TextReplacement},
 };
 
@@ -26,6 +30,7 @@ pub fn process(transcript: &str, steps: &TextSteps) -> String {
     if steps.spoken_formatting {
         text = spoken_formatting::apply_for(&text, &steps.language);
     }
+    text = number_words::apply_for(&text, &steps.language);
     if steps.spoken_symbols {
         text = spoken_symbols::apply_for(&text, &steps.language);
     }
@@ -71,7 +76,32 @@ mod tests {
 
     #[test]
     fn fillers_stay_outside_english() {
-        let steps = TextSteps { language: "de".into(), ..all_on() };
+        let steps = TextSteps {
+            language: "de".into(),
+            ..all_on()
+        };
         assert!(process("um das", &steps).contains("um"));
+    }
+
+    #[test]
+    fn french_numbers_become_digits_before_the_symbols() {
+        let steps = TextSteps {
+            language: "fr".into(),
+            ..all_on()
+        };
+        assert_eq!(process("J'ai vingt-cinq ans", &steps), "J'ai 25 ans");
+        assert_eq!(process("quatre-vingt-dix-huit", &steps), "98");
+        assert_eq!(process("trois pour cent point", &steps), "3 %.");
+    }
+
+    #[test]
+    fn numbers_wait_for_french() {
+        for language in ["", "en"] {
+            let steps = TextSteps {
+                language: language.into(),
+                ..TextSteps::default()
+            };
+            assert_eq!(process("vingt-cinq", &steps), "vingt-cinq");
+        }
     }
 }

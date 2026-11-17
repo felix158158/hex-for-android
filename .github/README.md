@@ -26,8 +26,9 @@ This fork keeps that base and makes it usable in French.
 |---|---|
 | Speech model | **Parakeet TDT 0.6B v3** instead of the English-only Parakeet Unified English — 25 European languages, detected automatically, same engine and size |
 | Dictated punctuation | French commands (*nouvelle ligne*, *virgule*, *point*, *ouvrez les guillemets*, *arobase*…) active only for French; the upstream English and Spanish rules are kept |
+| Numbers | French number words become digits on the phone: *vingt-cinq* → `25`, *quatre-vingt-dix-huit* → `98`, *deux mille vingt-six* → `2026`, *trois pour cent* → `3 %`, *trois virgule quatorze* → `3,14`; a lone *un*/*une* and compounds like *vingt-cinquième* stay words |
 | Interface | follows the phone's system language, French table with an English fallback |
-| Build | a signed release APK (`0.3.0-fr`) and a GitHub Actions workflow that builds the Rust core twice and runs its tests on a clean runner |
+| Build | a signed release APK (`0.3.1-fr`) and a GitHub Actions workflow that builds the Rust core twice and runs its tests on a clean runner |
 | Contribution | branch `i18n` carries a clean, upstream-shaped version of the translation mechanism with French, Simplified Chinese and Serbian tables |
 
 Install and build instructions: [`android/README.md`](../android/README.md).
@@ -77,8 +78,9 @@ cette base et la rend utilisable en français.
 |---|---|
 | Modèle vocal | **Parakeet TDT 0.6B v3** à la place du modèle anglais Parakeet Unified English — 25 langues européennes, détectées automatiquement, même moteur et même taille |
 | Ponctuation dictée | commandes françaises (*nouvelle ligne*, *virgule*, *point*, *ouvrez les guillemets*, *arobase*…) actives seulement en français ; les règles anglaises et espagnoles d'origine sont conservées |
+| Nombres | les nombres dits en français s'écrivent en chiffres sur le téléphone : *vingt-cinq* → `25`, *quatre-vingt-dix-huit* → `98`, *deux mille vingt-six* → `2026`, *trois pour cent* → `3 %`, *trois virgule quatorze* → `3,14` ; un *un*/*une* isolé et les composés comme *vingt-cinquième* restent en mots |
 | Interface | suit la langue du téléphone, table française avec repli sur l'anglais |
-| Build | un APK release signé (`0.3.0-fr`) et un workflow GitHub Actions qui compile le cœur Rust deux fois et lance ses tests sur une machine propre |
+| Build | un APK release signé (`0.3.1-fr`) et un workflow GitHub Actions qui compile le cœur Rust deux fois et lance ses tests sur une machine propre |
 | Contribution | la branche `i18n` porte une version propre, prête pour l'amont, du mécanisme de traduction avec les tables français, chinois simplifié et serbe |
 
 Installation et compilation : [`android/README.md`](../android/README.md).
