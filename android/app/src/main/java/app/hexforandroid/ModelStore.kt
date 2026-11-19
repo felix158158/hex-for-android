@@ -7,89 +7,87 @@ import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.security.MessageDigest
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Parakeet TDT 0.6B v3 (`PARAKEET_V3_ARTIFACT` in src/transcription/artifacts.rs),
- * NVIDIA's multilingual model: 25 European languages, French included. It
- * works out the spoken language by itself, so the engine is given no hint
- * (desktop Hex declares it `accepts_language_hint: false` in models.rs).
+ * The GGUF files [ModelCatalog] offers, stored in the app's external files
+ * directory so a development machine can also `adb push` one there instead of
+ * downloading it.
  *
- * Same architecture and size as the English-only model this fork replaces,
- * so the vocabulary rescoring and the two CPU variants are untouched. Pinned
- * to the same revision and hash as desktop Hex.
- *
- * The file lives in the app's external files directory so a development
- * machine can also `adb push` it there instead of downloading.
+ * Every file is pinned by repository, revision, byte size and SHA-256, as the
+ * desktop catalogue does, so a download is checked before the engine sees it.
+ * A model is a parameter here: nothing in this object knows which one the user
+ * picked.
  */
 object ModelStore {
-    const val FILENAME = "parakeet-tdt-0.6b-v3-Q8_0.gguf"
-    private const val REPOSITORY = "handy-computer/parakeet-tdt-0.6b-v3-gguf"
-    private const val REVISION = "85ac09ea12fc4b1112fa76810059364bc6adc9de"
-    const val BYTES = 739_508_576L
-    private const val SHA256 = "5859f77944efcd8eafa23a6350731960b2b55b2203df51f319665c807d802cc7"
-    private const val URL_STRING = "https://huggingface.co/$REPOSITORY/resolve/$REVISION/$FILENAME"
-
     fun dir(context: Context): File =
         File(context.getExternalFilesDir(null) ?: context.filesDir, "models").apply { mkdirs() }
 
-    fun file(context: Context) = File(dir(context), FILENAME)
+    fun file(context: Context, model: SpeechModel) = File(dir(context), model.filename)
 
-    private fun marker(context: Context) = File(dir(context), "$FILENAME.verified")
+    private fun marker(context: Context, model: SpeechModel) =
+        File(dir(context), "${model.filename}.verified")
 
-    /** True when the file is present and its hash was checked for this size and time. */
-    fun isVerified(context: Context): Boolean {
-        val model = file(context)
-        if (!model.isFile || model.length() != BYTES) return false
-        val marker = marker(context)
-        return marker.isFile && marker.readText() == stamp(model)
+    /** True when the file is there at the right size, hash or no hash. */
+    fun isPresent(context: Context, model: SpeechModel) =
+        file(context, model).let { it.isFile && it.length() == model.bytes }
+
+    private fun stamp(context: Context, model: SpeechModel): String {
+        val file = file(context, model)
+        return "${file.length()}:${file.lastModified()}:${model.sha256}"
     }
 
-    fun isPresent(context: Context) = file(context).let { it.isFile && it.length() == BYTES }
-
-    private fun stamp(model: File) = "${model.length()}:${model.lastModified()}:$SHA256"
+    /** True when the file is present and its hash was checked for this size and time. */
+    fun isVerified(context: Context, model: SpeechModel): Boolean {
+        if (!isPresent(context, model)) return false
+        val marker = marker(context, model)
+        return marker.isFile && marker.readText() == stamp(context, model)
+    }
 
     /** Hashes the file (a few seconds) and records the result. */
-    fun verify(context: Context, progress: (Float) -> Unit = {}): Boolean {
-        val model = file(context)
-        if (!model.isFile || model.length() != BYTES) return false
+    fun verify(context: Context, model: SpeechModel, progress: (Float) -> Unit = {}): Boolean {
+        val file = file(context, model)
+        if (!file.isFile || file.length() != model.bytes) return false
         val digest = MessageDigest.getInstance("SHA-256")
         val buffer = ByteArray(1 shl 20)
         var read = 0L
-        FileInputStream(model).use { input ->
+        FileInputStream(file).use { input ->
             while (true) {
                 val n = input.read(buffer)
                 if (n < 0) break
                 digest.update(buffer, 0, n)
                 read += n
-                progress(read.toFloat() / BYTES)
+                progress(read.toFloat() / model.bytes)
             }
         }
-        val ok = digest.digest().joinToString("") { "%02x".format(it) } == SHA256
-        if (ok) marker(context).writeText(stamp(model)) else marker(context).delete()
+        val ok = digest.digest().joinToString("") { "%02x".format(it) } == model.sha256
+        val marker = marker(context, model)
+        if (ok) marker.writeText(stamp(context, model)) else marker.delete()
         return ok
     }
 
-    private val busy = java.util.concurrent.atomic.AtomicBoolean(false)
+    private val busy = AtomicBoolean(false)
 
     /** Downloads with resume from a partial file, then verifies. Blocking; one at a time. */
-    fun download(context: Context, progress: (Long, Long) -> Unit): Boolean {
+    fun download(context: Context, model: SpeechModel, progress: (Long, Long) -> Unit): Boolean {
         if (!busy.compareAndSet(false, true)) throw IllegalStateException("A download is already running")
         try {
-            return downloadOnce(context, progress)
+            return downloadOnce(context, model, progress)
         } finally {
             busy.set(false)
         }
     }
 
-    private fun downloadOnce(context: Context, progress: (Long, Long) -> Unit): Boolean {
-        val part = File(dir(context), "$FILENAME.part")
+    private fun downloadOnce(context: Context, model: SpeechModel, progress: (Long, Long) -> Unit): Boolean {
+        val part = File(dir(context), "${model.filename}.part")
         var have = if (part.isFile) part.length() else 0L
-        if (have > BYTES) {
+        if (have > model.bytes) {
             part.delete()
             have = 0
         }
-        if (have < BYTES) {
-            val connection = (URL(URL_STRING).openConnection() as HttpURLConnection).apply {
+        if (have < model.bytes) {
+            val url = "https://huggingface.co/${model.repository}/resolve/${model.revision}/${model.filename}"
+            val connection = (URL(url).openConnection() as HttpURLConnection).apply {
                 instanceFollowRedirects = true
                 connectTimeout = 20_000
                 readTimeout = 30_000
@@ -108,7 +106,7 @@ object ModelStore {
                         output.write(buffer, 0, n)
                         have += n
                         if (have - last > (1 shl 20)) {
-                            progress(have, BYTES)
+                            progress(have, model.bytes)
                             last = have
                         }
                     }
@@ -116,11 +114,19 @@ object ModelStore {
             }
         }
         // A stream that ended early keeps its partial file for the next resume.
-        if (have != BYTES) throw IllegalStateException("The download stopped at ${have shr 20} MB; try again to resume")
-        progress(BYTES, BYTES)
-        val model = file(context)
-        model.delete()
-        if (!part.renameTo(model)) throw IllegalStateException("could not move the download into place")
-        return verify(context)
+        if (have != model.bytes) {
+            throw IllegalStateException("The download stopped at ${have shr 20} MB; try again to resume")
+        }
+        progress(model.bytes, model.bytes)
+        val file = file(context, model)
+        file.delete()
+        if (!part.renameTo(file)) throw IllegalStateException("could not move the download into place")
+        return verify(context, model)
+    }
+
+    /** Removes the file and its verification marker. */
+    fun delete(context: Context, model: SpeechModel) {
+        file(context, model).delete()
+        marker(context, model).delete()
     }
 }

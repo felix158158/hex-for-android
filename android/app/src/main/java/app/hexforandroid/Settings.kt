@@ -33,6 +33,8 @@ class Settings(context: Context) {
     var bubbleVisibility by string("bubble_visibility", "keyboard")
     /** auto: edit the field's text; paste: put it on the clipboard and paste. */
     var insertMode by string("insert_mode", "auto")
+    /** The chosen model, by [ModelCatalog] id. */
+    var modelId by string("model_id", ModelCatalog.default.id)
     /** CPU threads for transcription; 0 picks [autoThreads]. */
     var threads by int("threads_v2", 0)
     var bubbleShape by string("bubble_shape", BubbleShape.Circle.name)
@@ -43,6 +45,9 @@ class Settings(context: Context) {
     var bubbleTop by float("bubble_top", 0.42f)
 
     fun threadCount() = if (threads > 0) threads else autoThreads()
+
+    /** The model the user picked, or the default one. */
+    fun model(): SpeechModel = ModelCatalog.byId(modelId)
 
     fun runSettings(): JSONObject = JSONObject().apply {
         // No language hint: Parakeet v3 detects the spoken language itself, and

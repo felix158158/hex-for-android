@@ -320,7 +320,7 @@ class MainActivity : Activity() {
         cleanupRow.describe(cleanupSummary())
         modelRow.describe(when {
             downloading != null -> "$downloading $downloadProgress%"
-            ModelStore.isPresent(this) -> "Parakeet v3 (multilingual)"
+            ModelStore.isPresent(this, settings.model()) -> settings.model().label
             else -> "Not downloaded"
         })
 
@@ -418,9 +418,10 @@ class MainActivity : Activity() {
                 { getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName) },
                 { startActivity(Intent(AndroidSettings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName"))) }),
             SetupStep("Speech model",
-                if (downloading != null) "$downloading $downloadProgress%" else "Parakeet v3 · 739 MB",
-                R.drawable.hex_icon_wave, if (ModelStore.isPresent(this)) "Verify" else "Download",
-                { ModelStore.isVerified(this) },
+                if (downloading != null) "$downloading $downloadProgress%" else
+                    "${settings.model().label} · ${ModelCatalog.sizeLabel(settings.model().bytes)}",
+                R.drawable.hex_icon_wave, if (ModelStore.isPresent(this, settings.model())) "Verify" else "Download",
+                { ModelStore.isVerified(this, settings.model()) },
                 { fetchModel() }),
         )
     }
@@ -438,16 +439,17 @@ class MainActivity : Activity() {
 
     private fun fetchModel() {
         if (downloading != null) return
-        val verifyOnly = ModelStore.isPresent(this)
+        val model = settings.model()
+        val verifyOnly = ModelStore.isPresent(this, model)
         downloading = if (verifyOnly) "Verifying" else "Downloading"
         downloadProgress = 0
         refresh()
         thread(name = "hex-model") {
             val result = runCatching {
                 if (verifyOnly) {
-                    ModelStore.verify(this) { f -> progress((f * 100).toInt()) }
+                    ModelStore.verify(this, model) { f -> progress((f * 100).toInt()) }
                 } else {
-                    ModelStore.download(this) { have, total -> progress((have * 100 / total).toInt()) }
+                    ModelStore.download(this, model) { have, total -> progress((have * 100 / total).toInt()) }
                 }
             }
             runOnUiThread {
@@ -629,24 +631,45 @@ class MainActivity : Activity() {
     }
 
     private fun modelSheet() {
-        val sheet = Sheet(this, ui, "Speech model", listOf("Parakeet v3, NVIDIA's multilingual model: 25 European languages, French among them. It picks the language you speak by itself, on this phone"))
+        val sheet = Sheet(this, ui, "Speech model", listOf(
+            "Downloaded once, then it runs offline. Larger models transcribe more languages but are slower and need more memory.",
+        ))
         val card = ui.card()
-        val state = Dictation.state
-        val file = when {
-            ModelStore.isVerified(this) -> "739 MB · verified"
-            ModelStore.isPresent(this) -> "739 MB · not verified"
-            else -> "Not downloaded"
+        val checks = mutableMapOf<String, View>()
+        val statusRow = ui.row("File", "", R.drawable.hex_icon_folder)
+        val action = ui.button(Text.s("Download")) { sheet.dismiss(); fetchModel() }
+        fun paint() {
+            val model = settings.model()
+            checks.forEach { (id, check) -> check.visibility = if (id == model.id) View.VISIBLE else View.INVISIBLE }
+            val status = when {
+                ModelStore.isVerified(this, model) -> Text.s("verified")
+                ModelStore.isPresent(this, model) -> Text.s("not verified")
+                else -> Text.s("not downloaded")
+            }
+            statusRow.describe("${ModelCatalog.sizeLabel(model.bytes)} · $status")
+            action.text = Text.s(if (ModelStore.isPresent(this, model)) "Verify" else "Download")
         }
-        card.row(ui.row("File", file, R.drawable.hex_icon_folder))
-        card.row(ui.row("Engine", state.engine ?: "Loads when Hex turns on", R.drawable.hex_icon_terminal))
-        state.last?.let {
-            card.row(ui.row("Last dictation", Text.dictation(it.audioMs, it.inferenceMs), R.drawable.hex_icon_timer))
+        ModelCatalog.all.forEach { model ->
+            val check = ui.icon(R.drawable.hex_check, 18, ui.t.accent)
+            checks[model.id] = check
+            card.row(ui.row(model.label, "${ModelCatalog.sizeLabel(model.bytes)} · ${model.note}", trailing = check) {
+                val changed = settings.modelId != model.id
+                settings.modelId = model.id
+                paint()
+                if (changed && DictationService.running) toast("Applies when Hex next turns on")
+            })
         }
         sheet.body.addView(card)
-        sheet.actions(
-            listOf(ui.button(if (ModelStore.isPresent(this)) "Verify" else "Download") { sheet.dismiss(); fetchModel() }),
-            listOf(ui.button("Done") { sheet.dismiss() }),
-        )
+        sheet.body.addView(ui.space(12))
+        sheet.body.addView(ui.card().apply {
+            row(statusRow)
+            row(ui.row("Engine", Dictation.state.engine ?: "Loads when Hex turns on", R.drawable.hex_icon_terminal))
+            Dictation.state.last?.let {
+                row(ui.row("Last dictation", Text.dictation(it.audioMs, it.inferenceMs), R.drawable.hex_icon_timer))
+            }
+        })
+        paint()
+        sheet.actions(listOf(action), listOf(ui.button("Done") { sheet.dismiss() }))
         sheet.show()
     }
 

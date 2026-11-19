@@ -13,7 +13,7 @@ class ArmActivity : Activity() {
     override fun onResume() {
         super.onResume()
         Dictation.init(this)
-        if (Dictation.micAllowed() && ModelStore.isPresent(this)) {
+        if (Dictation.micAllowed() && ModelStore.isPresent(this, Settings(this).model())) {
             if (!DictationService.start(this)) Toast.makeText(this, "Open Hex to turn it on", Toast.LENGTH_SHORT).show()
         } else {
             startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
